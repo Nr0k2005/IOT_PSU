@@ -6,7 +6,10 @@
 </head>
 <body>
   <div id="content">กำลังโหลด HTML จาก GitHub...</div>
-
+  <h1>ค่าปัจจุบัน</h1>
+  <h1>อุณหภูมิ {{temp}}</h1>
+  <h1>ความชื้น {{hum}}</h1>
+  
   <script>
     fetch("https://cdn.jsdelivr.net/gh/Nr0k2005/IOT_PSU/test.html")
       .then(r => r.text())
@@ -19,12 +22,11 @@
       });
   </script>
   
-  <h1>ค่าปัจจุบัน</h1>
-  <h1>อุณหภูมิ {{temp}}</h1>
-  <h1>ความชื้น {{hum}}</h1>
+
 
 </body>
 </html>
+
 
 
 
