@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PSU ESP8266 Personality Survey</title>
+    <!-- Tailwind CSS CDN for modern and responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Styles based on user's initial setup and Thai font */
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+
+        .page { display: none; }
+        .active { display: flex; } 
+        
+        :root {
+            --black: #1a1a1a;
+            --white: #ffffff;
+            --bg: #e6fffb; /* Light Cyan */
+            --primary: #80cbc4; /* Teal Light */
+            --secondary: #4db6ac; /* Teal */
+            --text: var(--black);
+            --button-bg: #00796b; /* Dark Teal */
+            --button-text: var(--white);
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif, Arial;
+            font-size: 1.1rem; 
+            line-height: 1.5;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh; 
+            margin: 0;
+            padding: 20px 10px;
+        }
+
+        .page {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            width: 100%;
+            padding: 1rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.5rem; 
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        button {
+            border-radius: 9999px; 
+            border: 2px solid var(--button-bg);
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--button-text);
+            background-color: var(--button-bg);
+            transition: all 0.3s ease;
+            padding: 12px 32px;
+            margin: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background-color: var(--secondary);
+            border-color: var(--secondary);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .question-card {
+            background-color: var(--primary);
+            border-radius: 1.5rem;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .radio-label {
+            display: block;
+            padding: 10px 8px;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 10px;
+            border: 1px solid var(--secondary);
+            background-color: var(--white);
+            transition: background-color 0.2s, color 0.2s;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .radio-label:hover {
+            background-color: var(--primary);
+        }
+        
+        input[type="radio"]:checked + .radio-label {
+            background-color: var(--button-bg);
+            color: var(--white);
+            border-color: var(--button-bg);
+            font-weight: bold;
+        }
+
+        .radio-group input[type="radio"] {
+            display: none; 
+        }
+
+        .main-question-header {
+            background-color: var(--secondary);
+            color: var(--white);
+            padding: 15px;
+            border-radius: 1rem;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive grid for options */
+        @media (min-width: 640px) {
+            .radio-grid {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+            }
+        }
+        @media (max-width: 639px) {
+            .radio-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+
+<body id="body" class="p-4 sm:p-8 flex items-center justify-center">
+
+    <!-- Home Page -->
+    <div id="PageHome" class="page active">
+        <h1 class="text-gray-800">PSU Survey</h1>
+        <h2 class="text-gray-600">แบบสอบถามบุคลิกภาพและการทำงานผ่าน ESP8266</h2>
+        <p class="mb-8 text-lg">แบบสอบถามนี้แบ่งเป็น 5 ประเภทหลัก (ประเภทละ 11 ข้อ) <br/>คุณจะตอบทีละประเภทจนครบ 5 ประเภท</p>
+        <button id="BtnStartSurvey" onclick="startSurvey()">เริ่มทำแบบสอบถาม</button>
+    </div>
+
+    <!-- Survey Page (Combined Category and Details) -->
+    <div id="PageSurvey" class="page justify-start items-start overflow-y-auto">
+        <div class="w-full">
+            <h1 id="survey-title" class="text-gray-800 sticky top-0 bg-white bg-opacity-90 py-4 mb-4 z-10 rounded-b-xl shadow-md">
+                <!-- Survey Title Here -->
+            </h1>
+            <div id="survey-questions-container" class="w-full">
+                <!-- All 11 Questions for the current category will be rendered here -->
+            </div>
+            <div class="mt-8 mb-10 w-full flex justify-center">
+                <button id="BtnSubmitCategory" onclick="submitAllAnswers()" style="display:none;">
+                    ส่งคำตอบประเภทนี้ (${currentCategoryIndex + 1}/5)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Page -->
+    <div id="PageResult" class="page">
+        <h1 class="text-gray-800">แบบสอบถามเสร็จสมบูรณ์!</h1>
+        <p class="text-lg mb-8">ขอบคุณที่ร่วมทำแบบสอบถามบุคลิกภาพนี้</p>
+        <p class="text-base mb-8 text-gray-700">ข้อมูลคำตอบทั้งหมดถูกส่งไปยัง ESP8266 เรียบร้อยแล้ว</p>
+        <div id="result-summary" class="question-card p-6 w-full max-w-lg">
+            <!-- Summary will be shown here -->
+        </div>
+        <button onclick="showPage('PageHome')">กลับไปหน้าหลัก</button>
+    </div>
+
+</body>
+
+<script>
+    // Constants for API communication
+    const API_ENDPOINT_ANSWER = '/answer'; // For sending answers
+    
+    // Custom 5-point Likert scale options used for rendering all questions
+    const LIKERT_OPTIONS = [
+        { score: 1, text: "น้อยมาก" },
+        { score: 2, text: "ค่อนข้างน้อย" },
+        { score: 3, text: "ไม่แน่ใจ / ปานกลาง" },
+        { score: 4, text: "ค่อนข้างมาก" },
+        { score: 5, text: "มากที่สุด" }
+    ];
+
+    // --- State Variables ---
+    let currentCategoryIndex = 0; // Tracks which of the 5 categories we are on (0 to 4)
+    let userAnswers = {}; // Store all user answers: { catId: { main: score, details: { qId: score, ... } } }
+    let ALL_QUESTIONS = null; // Will be populated by the combined data
+    
+    // --- Combined Question Data (From uploaded JSONs) ---
+    // Note: I'm converting the 1-4 scale from JSON to 1-5 scale for consistency with the UI.
+    const rawCategories = [{"id":"1","name":"บุคลิกภาพและลักษณะนิสัย (Personality Traits)","file":"personalitytraits.json"},{"id":"2","name":"ความฉลาดทางอารมณ์ (Emotional Intelligence)","file":"emotionsintelligence.json"},{"id":"3","name":"สไตล์การทำงาน (Work Style)","file":"workstyle.json"},{"id":"4","name":"การคิดเชิงวิเคราะห์และการแก้ปัญหา (Analytical & Problem-Solving Skills)","file":"analyticalproblem.json"},{"id":"5","name":"ค่านิยมและแรงจูงใจในชีวิต (Values & Motivation)","file":"valuesmotivation.json"}];
+    const rawQ1 = [{"id":"1","question":"ฉันชอบเข้าสังคมและพบปะผู้คนใหม่ ๆ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"2","question":"ฉันมักจะวางแผนล่วงหน้าอย่างรอบคอบก่อนลงมือทำ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"3","question":"ฉันรู้สึกมีพลังเมื่อได้อยู่ท่ามกลางผู้คน","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"4","question":"ฉันเป็นคนชอบคิดวิเคราะห์และพิจารณาอย่างละเอียด","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"5","question":"ฉันสามารถปรับตัวได้ง่ายเมื่อเจอสถานการณ์ไม่คาดคิด","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"6","question":"ฉันมักจะให้ความสำคัญกับความรู้สึกของผู้อื่น","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"7","question":"ฉันเป็นคนมั่นใจในความสามารถของตัวเอง","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"8","question":"ฉันชอบทำงานอย่างมีระเบียบและเป็นระบบ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"9","question":"ฉันรู้สึกเหนื่อยเมื่ออยู่ในกลุ่มคนจำนวนมาก","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"10","question":"ฉันมักจะแสดงความรู้สึกของตนเองออกมาอย่างเปิดเผย","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}}];
+    const rawQ2 = [{"id":"1","question":"ฉันรู้ว่าฉันกำลังรู้สึกอะไรในแต่ละสถานการณ์ ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"2","question":"ฉันสามารถสงบสติอารมณ์เมื่อเกิดความขัดแย้ง ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"3","question":"ฉันมักรับฟังผู้อื่นก่อนแสดงความคิดเห็น ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"4","question":"ฉันเข้าใจว่าผู้อื่นรู้สึกอย่างไรโดยไม่ต้องพูดออกมา ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"5","question":"ฉันไม่ปล่อยให้อารมณ์มาควบคุมการตัดสินใจ ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"6","question":"ฉันให้อภัยผู้อื่นได้ง่าย ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"7","question":"ฉันรู้วิธีให้กำลังใจตนเองเมื่อผิดหวัง ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"8","question":"ฉันสามารถรับมือกับคำวิจารณ์ได้ดี ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"9","question":"ฉันมักช่วยเหลือผู้อื่นเมื่อเห็นเขาต้องการความช่วยเหลือ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"10","question":"ฉันควบคุมอารมณ์ตนเองได้ดีในสถานการณ์คับขัน","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}}];
+    const rawQ3 = [{"id":"1","question":"ฉันชอบทำงานที่มีโครงสร้างและขั้นตอนชัดเจน ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"2","question":"ฉันทำงานได้ดีเมื่ออยู่ภายใต้ความกดดัน ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"3","question":"ฉันชอบทำงานร่วมกับผู้อื่นมากกว่าทำคนเดียว ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"4","question":"ฉันมักตั้งเป้าหมายและวัดผลความสำเร็จของตนเอง ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"5","question":"ฉันสามารถจัดการเวลาและลำดับความสำคัญของงานได้ดี ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"6","question":"ฉันมักหาวิธีใหม่ ๆ เพื่อทำงานให้มีประสิทธิภาพ ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"7","question":"ฉันรู้สึกพึงพอใจเมื่อได้ทำงานด้วยตนเองโดยไม่ต้องมีคำสั่ง ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"8","question":"ฉันสามารถทำงานได้ต่อเนื่องแม้งานจะซ้ำซาก ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"9","question":"ฉันมักแบ่งปันความคิดกับทีมเพื่อให้ผลงานดีขึ้น ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"10","question":"ฉันมักจะเรียนรู้จากข้อผิดพลาดในอดีตเพื่อปรับปรุงงาน","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}}];
+    const rawQ4 = [{"id":"1","question":"ฉันสามารถมองเห็นปัญหาได้จากหลายมุมมอง","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"2","question":"ฉันมักหาข้อมูลก่อนตัดสินใจทำสิ่งใด ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"3","question":"ฉันไม่รีบตัดสินใจเมื่อยังไม่มีข้อมูลครบถ้วน ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"4","question":"ฉันสามารถหาทางออกใหม่เมื่อวิธีเดิมใช้ไม่ได้ผล","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"5","question":"ฉันสามารถทำความเข้าใจปัญหาที่ซับซ้อน ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"6","question":"ฉันมักตั้งคำถามกับสิ่งที่เห็นหรือได้ยิน","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"7","question":"ฉันใช้เหตุผลมากกว่าอารมณ์ในการตัดสินใจ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"8","question":"ฉันสามารถอธิบายเหตุผลของการตัดสินใจของฉันได้ชัดเจน","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"9","question":"ฉันมักวิเคราะห์ข้อดีข้อเสียก่อนลงมือทำ ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"10","question":"ฉันเชื่อว่าทุกปัญหามีทางออกเสมอ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}}];
+    const rawQ5 = [{"id":"1","question":"ฉันรู้ว่าฉันต้องการอะไรในชีวิต","options":{"1":"น้อยมาก","2":"ค่อนซ้ายน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"2","question":"ฉันมีแรงบันดาลใจที่จะพัฒนาตนเองอยู่เสมอ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"3","question":"ฉันให้ความสำคัญกับการช่วยเหลือผู้อื่น ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"4","question":"ฉันรู้สึกภูมิใจเมื่อทำสิ่งที่เป็นประโยชน์ต่อสังคม","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"5","question":"ฉันให้ความสำคัญกับความสมดุลระหว่างงานกับชีวิตส่วนตัว","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"6","question":"ฉันพยายามเรียนรู้สิ่งใหม่ ๆ อยู่เสมอ ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"7","question":"ฉันมักตั้งเป้าหมายระยะยาวให้กับตนเอง","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"8","question":"ฉันรู้สึกดีเมื่อเห็นผู้อื่นประสบความสำเร็จ ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"9","question":"ฉันมีความเชื่อมั่นในคุณค่าของตนเอง ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"10","question":"ฉันมักจะใช้เวลาไตร่ตรองถึงความหมายของชีวิต","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}}];
+
+    // Function to initialize and combine all raw data
+    function initializeQuestions() {
+        const questionSets = [rawQ1, rawQ2, rawQ3, rawQ4, rawQ5];
+        
+        ALL_QUESTIONS = rawCategories.map((cat, index) => {
+            // Synthesize a main question based on the category name
+            const mainQuestionText = `คุณคิดว่าคุณมีคุณสมบัติที่เกี่ยวข้องกับ "${cat.name.split(' (')[0]}" ในระดับใด?`;
+            
+            return {
+                id: cat.id,
+                name_th: cat.name,
+                main_question: {
+                    id: `${cat.id}00`, // e.g., 100
+                    question: mainQuestionText,
+                },
+                detail_questions: questionSets[index].map(q => ({
+                    id: `${cat.id}${q.id.padStart(2, '0')}`, // e.g., 101, 102
+                    question: q.question,
+                })),
+                total_questions: 11 // 1 main + 10 details
+            };
+        });
+        console.log("ALL_QUESTIONS structure initialized.");
+    }
+    
+    // --- Core UI Functions ---
+
+    /**
+     * Shows a specific page by adding the 'active' class and hiding others.
+     * @param {string} pageId - The ID of the page to show.
+     */
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active', 'flex'));
+        const page = document.getElementById(pageId);
+        if (page) {
+            // Apply flex only to survey pages that need full alignment control
+            page.classList.add('active', 'flex'); 
+            window.scrollTo(0, 0); // Scroll to top on page change
+        }
+    }
+
+    // --- Data Fetching and Communication ---
+    
+    /**
+     * Sends the complete set of 11 answers for the current category to the ESP8266.
+     * @param {object} answerData - The structured data object to send.
+     */
+    async function sendAnswerToESP(answerData) {
+        console.log("Sending answer data for Category", answerData.categoryId, "to ESP8266 at:", API_ENDPOINT_ANSWER);
+        console.log("Data:", answerData);
+        try {
+            // In a real application, you would perform the actual fetch here
+            // const response = await fetch(API_ENDPOINT_ANSWER, {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify(answerData)
+            // });
+            // const result = await response.json();
+            
+            // *** Mocking success for demonstration ***
+            await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
+            console.log("Answer sent successfully (Mocked).");
+            return { success: true };
+        } catch (error) {
+            console.error("Failed to send data to ESP8266:", error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // --- Survey Flow Logic ---
+
+    /**
+     * Starts the survey flow and renders the first category page.
+     */
+    function startSurvey() {
+        if (!ALL_QUESTIONS) {
+            initializeQuestions();
+        }
+        currentCategoryIndex = 0;
+        userAnswers = {};
+        renderCategoryPage();
+        showPage('PageSurvey');
+    }
+
+    /**
+     * Renders all 11 questions (1 main + 10 details) for the current category.
+     */
+    function renderCategoryPage() {
+        const currentCategory = ALL_QUESTIONS[currentCategoryIndex];
+        const container = document.getElementById('survey-questions-container');
+        const titleElement = document.getElementById('survey-title');
+        const submitBtn = document.getElementById('BtnSubmitCategory');
+        
+        // Update UI
+        titleElement.innerHTML = `<span class="text-secondary">ประเภทที่ ${currentCategoryIndex + 1}/5:</span><br/> ${currentCategory.name_th}`;
+        submitBtn.textContent = `ส่งคำตอบประเภทนี้ (${currentCategoryIndex + 1}/5)`;
+        submitBtn.style.display = 'none';
+        container.innerHTML = '';
+        
+        // Initialize answer tracking for this category
+        userAnswers[currentCategory.id] = { main: null, details: {} };
+
+        // 1. Render the Main Question (Q0)
+        container.appendChild(createQuestionCard(
+            currentCategory.main_question,
+            currentCategory.id,
+            'main'
+        ));
+
+        // 2. Render the 10 Detail Questions (Q1-Q10)
+        currentCategory.detail_questions.forEach((q, index) => {
+            container.appendChild(createQuestionCard(
+                q,
+                currentCategory.id,
+                'detail'
+            ));
+        });
+    }
+
+    /**
+     * Generates the HTML for a single question card.
+     * @param {object} question - The question object {id, question}.
+     * @param {string} categoryId - The parent category ID.
+     * @param {string} type - 'main' or 'detail'.
+     * @returns {HTMLElement} The created question card div.
+     */
+    function createQuestionCard(question, categoryId, type) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'question-card text-left';
+        
+        // Determine the ID prefix for radio buttons
+        const radioName = type === 'main' ? `q-main-${categoryId}` : `q-detail-${question.id}`;
+        const questionId = type === 'main' ? `${categoryId}00` : question.id;
+        const qIndex = type === 'main' ? '0' : question.id.substring(question.id.length - 2); // Use last 2 digits for detail index
+
+        let optionsHtml = '';
+        LIKERT_OPTIONS.forEach(opt => {
+            optionsHtml += `
+                <input type="radio" id="${radioName}-${opt.score}" name="${radioName}" value="${opt.score}" data-qid="${questionId}" data-type="${type}" required>
+                <label for="${radioName}-${opt.score}" class="radio-label">${opt.text}</label>
+            `;
+        });
+
+        wrapper.innerHTML = `
+            <p class="text-lg font-medium mb-4 text-gray-900 border-b pb-2 border-secondary">
+                ${type === 'main' ? 'คำถามหลัก' : `คำถามย่อยข้อที่ ${qIndex}`}
+            </p>
+            <p class="text-xl font-semibold mb-6">${question.question}</p>
+            <div class="radio-group grid gap-2 radio-grid">
+                ${optionsHtml}
+            </div>
+        `;
+        
+        // Add event listener to track answer and check completion
+        wrapper.querySelectorAll(`input[name="${radioName}"]`).forEach(input => {
+            input.addEventListener('change', (e) => {
+                const score = parseInt(e.target.value);
+                const qid = e.target.getAttribute('data-qid');
+                const qType = e.target.getAttribute('data-type');
+                
+                const currentAnswers = userAnswers[categoryId];
+                if (qType === 'main') {
+                    currentAnswers.main = score;
+                } else {
+                    currentAnswers.details[qid] = score;
+                }
+
+                checkCategoryCompletion(categoryId);
+            });
+        });
+
+        return wrapper;
+    }
+
+    /**
+     * Checks if all 11 questions for the current category have been answered.
+     * @param {string} categoryId - The ID of the current category.
+     */
+    function checkCategoryCompletion(categoryId) {
+        const currentAnswers = userAnswers[categoryId];
+        const currentCategory = ALL_QUESTIONS.find(c => c.id === categoryId);
+        
+        if (!currentAnswers || !currentCategory) return;
+
+        const detailCount = Object.keys(currentAnswers.details).length;
+        const allAnswered = currentAnswers.main !== null && detailCount === 10;
+        
+        const submitBtn = document.getElementById('BtnSubmitCategory');
+
+        if (allAnswered) {
+            submitBtn.style.display = 'block';
+        } else {
+            submitBtn.style.display = 'none';
+        }
+    }
+
+    /**
+     * Submits all 11 answers for the completed category and moves to the next or results.
+     */
+    async function submitAllAnswers() {
+        const currentCategory = ALL_QUESTIONS[currentCategoryIndex];
+        const categoryId = currentCategory.id;
+        
+        // 1. Prepare data for all 11 questions
+        const answersForESP = {
+            type: 'category_complete',
+            categoryId: categoryId,
+            categoryName: currentCategory.name_th,
+            mainAnswer: {
+                id: currentCategory.main_question.id,
+                score: userAnswers[categoryId].main
+            },
+            detailAnswers: userAnswers[categoryId].details // { qId: score, ... }
+        };
+        
+        // Disable button and show loading (Optional: Add a visual loading state)
+        const submitBtn = document.getElementById('BtnSubmitCategory');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'กำลังส่งข้อมูล...';
+        
+        // 2. Send the answers to ESP8266
+        const response = await sendAnswerToESP(answersForESP);
+
+        // Re-enable button
+        submitBtn.disabled = false;
+        
+        if (response.success) {
+            // 3. Move to the next category
+            currentCategoryIndex++;
+
+            if (currentCategoryIndex < ALL_QUESTIONS.length) {
+                // More categories left, render the next page
+                renderCategoryPage();
+                showPage('PageSurvey');
+            } else {
+                // All categories completed, show results
+                showResults();
+            }
+        } else {
+            // Handle error
+            submitBtn.textContent = 'ส่งไม่สำเร็จ! ลองอีกครั้ง';
+            console.error("Error submitting answers. Please try again.");
+            // In a production app, you would show a user-friendly error modal.
+        }
+    }
+    
+    /**
+     * Shows the final results page with a summary.
+     */
+    function showResults() {
+        const summaryDiv = document.getElementById('result-summary');
+        let htmlSummary = '<h3 class="text-xl font-bold mb-4 text-gray-700">สรุปผลคำตอบ (ข้อมูลที่ส่งไป)</h3>';
+
+        ALL_QUESTIONS.forEach((cat) => {
+            const answers = userAnswers[cat.id];
+            if (answers) {
+                const detailCount = Object.keys(answers.details).length;
+                const detailTotalScore = Object.values(answers.details).reduce((sum, score) => sum + score, 0);
+                const detailAvg = detailCount > 0 ? (detailTotalScore / detailCount).toFixed(2) : 'N/A';
+                const totalQuestionsAnswered = 1 + detailCount;
+                const totalScore = answers.main + detailTotalScore;
+
+                htmlSummary += `
+                    <div class="mb-4 p-3 border-b border-gray-300 rounded-lg bg-white shadow-sm">
+                        <p class="font-bold text-secondary">${cat.name_th}</p>
+                        <p class="text-sm mt-1">คำถามหลัก (1 ข้อ): ${answers.main} คะแนน</p>
+                        <p class="text-sm">คำถามย่อย (10 ข้อ): คะแนนรวม ${detailTotalScore} | เฉลี่ย ${detailAvg}</p>
+                        <p class="text-sm font-semibold">รวมทุกข้อ: ${totalScore} คะแนน</p>
+                    </div>
+                `;
+            }
+        });
+
+        summaryDiv.innerHTML = htmlSummary;
+        showPage('PageResult');
+    }
+
+    // Initialize: Set up the question data when the page loads
+    window.onload = function() {
+        initializeQuestions();
+    }
+</script>
