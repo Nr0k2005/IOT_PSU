@@ -208,12 +208,14 @@
     // let JQ3 = JSON.parse(ESPrawQ3);
     // let JQ4 = JSON.parse(ESPrawQ4);
     // let JQ5 = JSON.parse(ESPrawQ5);
-    let JCategories = JSON.parse({{ErawCategories}});
-    let JQ1 = JSON.parse({{ErawQ1}});
-    let JQ2 = JSON.parse({{ErawQ2}});
-    let JQ3 = JSON.parse({{ErawQ3}});
-    let JQ4 = JSON.parse({{ErawQ4}});
-    let JQ5 = JSON.parse({{ErawQ5}});
+    let JCategories = JSON.parse(`{{ErawCategories}}`);
+    let JQ1 = JSON.parse(`{{ErawQ1}}`);
+    let JQ2 = JSON.parse(`{{ErawQ2}}`);
+    let JQ3 = JSON.parse(`{{ErawQ3}}`);
+    let JQ4 = JSON.parse(`{{ErawQ4}}`);
+    let JQ5 = JSON.parse(`{{ErawQ5}}`);
+
+    console.log("Loaded JSON Data:", JCategories, JQ1, JQ2, JQ3, JQ4, JQ5);
     
     // const rawCategories = [{"id":"1","name":"บุคลิกภาพและลักษณะนิสัย (Personality Traits)","file":"personalitytraits.json"},{"id":"2","name":"ความฉลาดทางอารมณ์ (Emotional Intelligence)","file":"emotionsintelligence.json"},{"id":"3","name":"สไตล์การทำงาน (Work Style)","file":"workstyle.json"},{"id":"4","name":"การคิดเชิงวิเคราะห์และการแก้ปัญหา (Analytical & Problem-Solving Skills)","file":"analyticalproblem.json"},{"id":"5","name":"ค่านิยมและแรงจูงใจในชีวิต (Values & Motivation)","file":"valuesmotivation.json"}];
     // const rawQ1 = [{"id":"1","question":"ฉันชอบเข้าสังคมและพบปะผู้คนใหม่ ๆ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"2","question":"ฉันมักจะวางแผนล่วงหน้าอย่างรอบคอบก่อนลงมือทำ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"3","question":"ฉันรู้สึกมีพลังเมื่อได้อยู่ท่ามกลางผู้คน","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"4","question":"ฉันเป็นคนชอบคิดวิเคราะห์และพิจารณาอย่างละเอียด","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"5","question":"ฉันสามารถปรับตัวได้ง่ายเมื่อเจอสถานการณ์ไม่คาดคิด","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"6","question":"ฉันมักจะให้ความสำคัญกับความรู้สึกของผู้อื่น","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"7","question":"ฉันเป็นคนมั่นใจในความสามารถของตัวเอง","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"8","question":"ฉันชอบทำงานอย่างมีระเบียบและเป็นระบบ","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"9","question":"ฉันรู้สึกเหนื่อยเมื่ออยู่ในกลุ่มคนจำนวนมาก","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}},{"id":"10","question":"ฉันมักจะแสดงความรู้สึกของตนเองออกมาอย่างเปิดเผย","options":{"1":"น้อยมาก","2":"ค่อนข้างน้อย","3":"ค่อนข้างมาก","4":"มากที่สุด"}}];
